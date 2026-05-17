@@ -25,6 +25,12 @@ export function createServer(version: string): McpServer {
     const server = new McpServer({
         name: "lunchmoney-mcp",
         version,
+        icons: [
+            {
+                src: "https://cdn.jsdelivr.net/gh/akutishevsky/lunchmoney-mcp@main/icon.png",
+                mimeType: "image/png",
+            },
+        ],
     });
 
     registerUserTools(server);
