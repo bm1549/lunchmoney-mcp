@@ -34,12 +34,14 @@
         "test": "npm run build && node --test 'test/**/*.test.mjs'",
         "lint": "eslint src/",
         "inspect": "npx @modelcontextprotocol/inspector node build/index.js",
-        "prepare": "husky",
+        "prepare": "husky 2>/dev/null || true; tsc",
         "prepublish:changelog": "claude -p --model haiku --allowedTools Bash,Edit,Read,Glob,Grep -- 'Review all git commits since the last version tag (use git log and git diff). Summarize changes into @CHANGELOG.md following the existing format. Bump the version in package.json, manifest.json, server.json, and src/index.ts.'",
         "prepublishOnly": "npm run build:mcpb"
     },
     "files": [
-        "build"
+        "build",
+        "src",
+        "tsconfig.json"
     ],
     "keywords": [
         "mcp",
