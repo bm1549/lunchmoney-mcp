@@ -105,10 +105,10 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Get monthly account balance history across all accounts — the data behind the Net Worth views in the LunchMoney app. History is monthly. With no month range, returns all available history plus an ephemeral `current` entry for the current month, which is calculated on demand and may change between requests. Only months with data are included.",
-            inputSchema: {
+            inputSchema: z.object({
                 start_month: startMonthSchema,
                 end_month: endMonthSchema,
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -138,7 +138,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Get monthly balance history for a single account. Call get_all_manual_accounts, get_all_plaid_accounts, or get_all_manual_crypto first to discover ids. For synced crypto holdings use get_crypto_synced_balance_history instead.",
-            inputSchema: {
+            inputSchema: z.object({
                 account_type: accountTypeSchema,
                 account_id: z.coerce
                     .number()
@@ -146,7 +146,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
                     .describe("Id of the account to get balance history for."),
                 start_month: startMonthSchema,
                 end_month: endMonthSchema,
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -182,7 +182,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Create or update monthly balance history entries for a single account. Every month must be a past calendar month — the current month is calculated on demand and cannot be written. The request is all-or-nothing: if any entry fails validation, none are applied. The response contains only the entries submitted, not the account's full history.",
-            inputSchema: {
+            inputSchema: z.object({
                 account_type: accountTypeSchema,
                 account_id: z.coerce
                     .number()
@@ -191,7 +191,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
                         "Id of the account to write balance history for.",
                     ),
                 balances: balancesSchema,
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },
@@ -225,7 +225,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Delete ALL historical balance entries for a single account. This is irreversible and affects the Net Worth views. To remove a single month, use delete_balance_history_entry instead.",
-            inputSchema: {
+            inputSchema: z.object({
                 account_type: accountTypeSchema,
                 account_id: z.coerce
                     .number()
@@ -233,7 +233,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
                     .describe(
                         "Id of the account whose entire balance history should be deleted.",
                     ),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
@@ -270,7 +270,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Get monthly balance history for a synced crypto holding, identified by its account id and ticker symbol. Synced crypto is scoped per symbol, so it is not available through get_account_balance_history.",
-            inputSchema: {
+            inputSchema: z.object({
                 account_id: z.coerce
                     .number()
                     .int()
@@ -284,7 +284,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
                     ),
                 start_month: startMonthSchema,
                 end_month: endMonthSchema,
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -319,7 +319,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Create or update monthly balance history entries for a synced crypto holding. Every month must be a past calendar month. If an entry sets `symbol`, it must match the symbol argument. The request is all-or-nothing.",
-            inputSchema: {
+            inputSchema: z.object({
                 account_id: z.coerce
                     .number()
                     .int()
@@ -332,7 +332,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
                         "Ticker symbol of the holding within the account (e.g. eth).",
                     ),
                 balances: balancesSchema,
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },
@@ -368,7 +368,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Delete ALL historical balance entries for a synced crypto holding. This is irreversible and affects the Net Worth views.",
-            inputSchema: {
+            inputSchema: z.object({
                 account_id: z.coerce
                     .number()
                     .int()
@@ -380,7 +380,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
                     .describe(
                         "Ticker symbol of the holding whose history should be deleted (e.g. eth).",
                     ),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
@@ -421,14 +421,14 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Delete a single historical balance entry by its id. The id must come from an entry with type=historical in a balance history response; ephemeral `current` entries have no id and cannot be deleted.",
-            inputSchema: {
+            inputSchema: z.object({
                 entry_id: z.coerce
                     .number()
                     .int()
                     .describe(
                         "Id of the historical balance entry to delete. Call get_balance_history or get_account_balance_history first to discover ids.",
                     ),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
@@ -465,7 +465,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
         {
             description:
                 "Update the display details shown for a deleted account in the Net Worth views. Applies to all historical entries for that deleted source. At least one field must be provided; pass null to clear a field.",
-            inputSchema: {
+            inputSchema: z.object({
                 account_id: z.coerce
                     .number()
                     .int()
@@ -506,7 +506,7 @@ export function registerBalanceHistoryTools(server: McpServer) {
                     .describe(
                         "Last few digits of the deleted account's number.",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },

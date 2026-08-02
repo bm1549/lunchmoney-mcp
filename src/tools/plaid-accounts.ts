@@ -41,13 +41,13 @@ export function registerPlaidAccountTools(server: McpServer) {
         {
             description:
                 "Get details of a single Plaid (synced) account by ID.",
-            inputSchema: {
+            inputSchema: z.object({
                 accountId: z.coerce
                     .number()
                     .describe(
                         "Id of the Plaid account to query. Call get_all_plaid_accounts first to discover ids.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -75,7 +75,7 @@ export function registerPlaidAccountTools(server: McpServer) {
         {
             description:
                 "Trigger a fetch of latest data from Plaid. Optionally scope the fetch to a date range and/or a specific Plaid account ID. Note: Plaid enforces a minimum 60-second delay between fetch requests; fetching may take up to 5 minutes.",
-            inputSchema: {
+            inputSchema: z.object({
                 start_date: z
                     .string()
                     .optional()
@@ -94,7 +94,7 @@ export function registerPlaidAccountTools(server: McpServer) {
                     .describe(
                         "If set, only fetch the specified Plaid account; otherwise all eligible accounts are fetched.",
                     ),
-            },
+            }),
             annotations: {
                 openWorldHint: true,
             },

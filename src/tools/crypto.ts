@@ -253,7 +253,7 @@ export function registerCryptoTools(server: McpServer) {
         {
             description:
                 "Update a manually-managed crypto balance. At least one of name, display_name, institution_name, or balance must be supplied. The symbol of an existing balance cannot be changed.",
-            inputSchema: {
+            inputSchema: z.object({
                 crypto_id: z.coerce
                     .number()
                     .int()
@@ -289,7 +289,7 @@ export function registerCryptoTools(server: McpServer) {
                     .describe(
                         "New institution or wallet provider display name. Pass null to clear it.",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },

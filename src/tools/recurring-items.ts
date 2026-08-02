@@ -8,7 +8,7 @@ export function registerRecurringItemsTools(server: McpServer) {
         {
             description:
                 "Retrieve a list of recurring items expected for a specified date range. The `matches` object on each item is populated based on the requested range.",
-            inputSchema: {
+            inputSchema: z.object({
                 start_date: z
                     .string()
                     .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
@@ -29,7 +29,7 @@ export function registerRecurringItemsTools(server: McpServer) {
                     .describe(
                         "If true, also returns recurring items suggested by the system that have not yet been reviewed.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -69,7 +69,7 @@ export function registerRecurringItemsTools(server: McpServer) {
         {
             description:
                 "Retrieve a single recurring item by ID. Optional date range populates the `matches` object.",
-            inputSchema: {
+            inputSchema: z.object({
                 recurringId: z.coerce
                     .number()
                     .describe(
@@ -89,7 +89,7 @@ export function registerRecurringItemsTools(server: McpServer) {
                     .describe(
                         "End of the range used to populate `matches` (YYYY-MM-DD). Required if start_date is set.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },

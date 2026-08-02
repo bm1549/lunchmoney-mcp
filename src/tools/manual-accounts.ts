@@ -53,13 +53,13 @@ export function registerManualAccountTools(server: McpServer) {
         "get_single_manual_account",
         {
             description: "Get details of a single manual account by ID.",
-            inputSchema: {
+            inputSchema: z.object({
                 accountId: z.coerce
                     .number()
                     .describe(
                         "Id of the manual account to query. Call get_all_manual_accounts first to discover ids.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -87,7 +87,7 @@ export function registerManualAccountTools(server: McpServer) {
         {
             description:
                 "Create a new manually-managed account. (Formerly `create_asset`.)",
-            inputSchema: {
+            inputSchema: z.object({
                 type: manualAccountTypeEnum.describe(
                     "Primary type of the manual account.",
                 ),
@@ -140,7 +140,7 @@ export function registerManualAccountTools(server: McpServer) {
                     .describe(
                         "If true, transactions cannot be assigned to this account.",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: false,
             },
@@ -197,7 +197,7 @@ export function registerManualAccountTools(server: McpServer) {
         {
             description:
                 "Update an existing manually-managed account. (Formerly `update_asset`.)",
-            inputSchema: {
+            inputSchema: z.object({
                 accountId: z.coerce
                     .number()
                     .describe("Id of the manual account to update."),
@@ -211,7 +211,7 @@ export function registerManualAccountTools(server: McpServer) {
                 institution_name: z.string().nullable().optional(),
                 closed_on: z.string().nullable().optional(),
                 exclude_from_transactions: z.boolean().optional(),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },
@@ -271,7 +271,7 @@ export function registerManualAccountTools(server: McpServer) {
         {
             description:
                 "Delete a manually-managed account. Optionally also delete its transactions/rules/recurring items, and/or its balance history. Both deletion options are irreversible.",
-            inputSchema: {
+            inputSchema: z.object({
                 accountId: z.coerce
                     .number()
                     .describe("Id of the manual account to delete."),
@@ -287,7 +287,7 @@ export function registerManualAccountTools(server: McpServer) {
                     .describe(
                         "If true, also deletes any balance history associated with this account.",
                     ),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },

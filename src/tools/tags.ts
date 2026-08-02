@@ -46,13 +46,13 @@ export function registerTagTools(server: McpServer) {
         "get_single_tag",
         {
             description: "Get details of a single tag by ID.",
-            inputSchema: {
+            inputSchema: z.object({
                 tagId: z.coerce
                     .number()
                     .describe(
                         "Id of the tag to query. Call get_all_tags first to discover ids.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -76,7 +76,7 @@ export function registerTagTools(server: McpServer) {
         "create_tag",
         {
             description: "Create a new tag.",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z
                     .string()
                     .min(1)
@@ -99,7 +99,7 @@ export function registerTagTools(server: McpServer) {
                     .boolean()
                     .optional()
                     .describe("If true, the tag is created archived."),
-            },
+            }),
             annotations: {
                 idempotentHint: false,
             },
@@ -139,14 +139,14 @@ export function registerTagTools(server: McpServer) {
         "update_tag",
         {
             description: "Update properties for an existing tag.",
-            inputSchema: {
+            inputSchema: z.object({
                 tagId: z.coerce.number().describe("Id of the tag to update."),
                 name: z.string().min(1).max(100).optional(),
                 description: z.string().max(200).nullable().optional(),
                 text_color: z.string().nullable().optional(),
                 background_color: z.string().nullable().optional(),
                 archived: z.boolean().optional(),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },
@@ -189,7 +189,7 @@ export function registerTagTools(server: McpServer) {
         {
             description:
                 "Delete a tag. By default fails (HTTP 422) with a structured `dependents` payload if the tag is in use by transactions or rules. Set force=true to delete and disassociate from those records.",
-            inputSchema: {
+            inputSchema: z.object({
                 tagId: z.coerce.number().describe("Id of the tag to delete."),
                 force: z
                     .boolean()
@@ -197,7 +197,7 @@ export function registerTagTools(server: McpServer) {
                     .describe(
                         "If true, force deletion even if dependencies exist (irreversible).",
                     ),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },

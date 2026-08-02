@@ -14,7 +14,7 @@ export function registerBudgetTools(server: McpServer) {
         {
             description:
                 "Get a summary of the user's budget for a specified date range. Returns per-category totals (other_activity, recurring_activity, budgeted, available, recurring_remaining, recurring_expected). Set include_occurrences=true for a per-period breakdown matching the account's budget periodicity. (Backed by the v2 GET /summary endpoint.)",
-            inputSchema: {
+            inputSchema: z.object({
                 start_date: z
                     .string()
                     .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
@@ -57,7 +57,7 @@ export function registerBudgetTools(server: McpServer) {
                     .describe(
                         "Include a `rollover_pool` section summarizing the current rollover pool balance and previous adjustments.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -147,7 +147,7 @@ export function registerBudgetTools(server: McpServer) {
         {
             description:
                 "Create or update a budget for a category and budget period. The start_date must be a valid budget period start for the account (see get_budget_settings).",
-            inputSchema: {
+            inputSchema: z.object({
                 start_date: z
                     .string()
                     .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
@@ -170,7 +170,7 @@ export function registerBudgetTools(server: McpServer) {
                     .max(350)
                     .optional()
                     .describe("Optional notes for the budget period."),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },
@@ -204,7 +204,7 @@ export function registerBudgetTools(server: McpServer) {
         {
             description:
                 "Remove the budget for a specific category and period. The request is idempotent — succeeds even if no budget exists for the period.",
-            inputSchema: {
+            inputSchema: z.object({
                 start_date: z
                     .string()
                     .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format")
@@ -214,7 +214,7 @@ export function registerBudgetTools(server: McpServer) {
                 category_id: z.coerce
                     .number()
                     .describe("Category ID for the budget to remove."),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },

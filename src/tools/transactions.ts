@@ -128,7 +128,7 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Retrieve transactions, optionally filtered by date range, account, category, tag, recurring item, status, and more. Returns at most `limit` transactions (default 1000, max 2000); `has_more` is set on the response when more match the filters. Pending and split-parent / group-child transactions are excluded by default.",
-            inputSchema: {
+            inputSchema: z.object({
                 start_date: dateString
                     .optional()
                     .describe(
@@ -232,7 +232,7 @@ export function registerTransactionTools(server: McpServer) {
                     .describe(
                         "Offset for pagination. Use with `has_more` from a previous response.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -269,11 +269,11 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Get details of a specific transaction. The response always includes plaid_metadata, custom_metadata, files, and (for split or group parents) the children array — none of which are returned by default in get_transactions.",
-            inputSchema: {
+            inputSchema: z.object({
                 transaction_id: z.coerce
                     .number()
                     .describe("ID of the transaction to retrieve."),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -303,7 +303,7 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Insert one or more transactions (1-500 per call). Returns inserted transactions plus any skipped duplicates.",
-            inputSchema: {
+            inputSchema: z.object({
                 transactions: z
                     .array(insertTransactionSchema)
                     .min(1)
@@ -327,7 +327,7 @@ export function registerTransactionTools(server: McpServer) {
                     .describe(
                         "If true, do not update the manual account's balance when inserting these transactions.",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: false,
             },
@@ -367,7 +367,7 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Update an existing transaction. Provide any subset of writable fields directly (the v2 API no longer wraps the body in a `transaction` envelope). Cannot modify split or grouped transactions; use the corresponding split/group tools instead.",
-            inputSchema: {
+            inputSchema: z.object({
                 transaction_id: z.coerce
                     .number()
                     .describe("ID of the transaction to update."),
@@ -380,7 +380,7 @@ export function registerTransactionTools(server: McpServer) {
                     .describe(
                         "Defaults to true. Pass false to skip updating the associated manual account's balance.",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },
@@ -412,11 +412,11 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Delete a single transaction. Fails for split/group transactions and their parents — unsplit/ungroup first. Irreversible.",
-            inputSchema: {
+            inputSchema: z.object({
                 transaction_id: z.coerce
                     .number()
                     .describe("ID of the transaction to delete."),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
@@ -450,7 +450,7 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Update multiple transactions in a single call (1-500). Each entry must include `id` plus at least one writable field. Cannot be used to modify split or grouped transactions.",
-            inputSchema: {
+            inputSchema: z.object({
                 transactions: z
                     .array(
                         updateTransactionFieldsSchema.extend({
@@ -466,7 +466,7 @@ export function registerTransactionTools(server: McpServer) {
                     .describe(
                         "Array of partial transaction updates, each keyed by its `id`.",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },
@@ -496,13 +496,13 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Bulk-delete transactions by ID (1-500). Fails if any ID is a split or group parent, or part of a split/group; unsplit or ungroup those first. Irreversible.",
-            inputSchema: {
+            inputSchema: z.object({
                 ids: z
                     .array(z.coerce.number())
                     .min(1)
                     .max(500)
                     .describe("Array of transaction IDs to delete (1-500)."),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
@@ -536,7 +536,7 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Create a transaction group from 2-500 existing transactions. Source transactions are hidden from get_transactions and accessible via the new group's `children` (set include_children=true on get_single_transaction). Cannot include split or recurring transactions.",
-            inputSchema: {
+            inputSchema: z.object({
                 ids: z
                     .array(z.coerce.number())
                     .min(2)
@@ -568,7 +568,7 @@ export function registerTransactionTools(server: McpServer) {
                     .array(z.coerce.number())
                     .optional()
                     .describe("Tag IDs to apply to the new group."),
-            },
+            }),
             annotations: {
                 idempotentHint: false,
             },
@@ -602,13 +602,13 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Delete (ungroup) a transaction group. The original child transactions remain and revert to normal ungrouped transactions.",
-            inputSchema: {
+            inputSchema: z.object({
                 transaction_id: z.coerce
                     .number()
                     .describe(
                         "ID of the transaction group (the group parent transaction) to delete.",
                     ),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
@@ -642,7 +642,7 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Split an existing transaction into 2-500 child transactions. The sum of child amounts must equal the parent's amount. After splitting, the parent is hidden from get_transactions and accessible via get_single_transaction (returns the parent with `children`).",
-            inputSchema: {
+            inputSchema: z.object({
                 transaction_id: z.coerce
                     .number()
                     .describe("ID of the transaction to split."),
@@ -653,7 +653,7 @@ export function registerTransactionTools(server: McpServer) {
                     .describe(
                         "Children to create. Sum of amounts must equal the parent's amount.",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: false,
             },
@@ -684,13 +684,13 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Unsplit a previously split transaction by deleting its children and restoring the parent. Pass the parent (split_parent_id) — not a child — as the path id.",
-            inputSchema: {
+            inputSchema: z.object({
                 transaction_id: z.coerce
                     .number()
                     .describe(
                         "ID of the previously split parent transaction. Use the split_parent_id of a split child to find it.",
                     ),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
@@ -724,7 +724,7 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Attach a local image or PDF receipt (max 10MB) to a transaction. Allowed types: image/jpeg, image/png, image/heic, image/heif, application/pdf. The file is read from the local filesystem of the host running this MCP server, and its type is determined from its actual contents — files that are not a real image or PDF are rejected. If LUNCHMONEY_ATTACHMENTS_DIR is set on the host, only files inside that directory can be attached.",
-            inputSchema: {
+            inputSchema: z.object({
                 transaction_id: z.coerce
                     .number()
                     .describe("ID of the transaction to attach the file to."),
@@ -743,7 +743,7 @@ export function registerTransactionTools(server: McpServer) {
                     .string()
                     .optional()
                     .describe("Optional notes describing the attachment."),
-            },
+            }),
             annotations: {
                 idempotentHint: false,
             },
@@ -805,11 +805,11 @@ export function registerTransactionTools(server: McpServer) {
         {
             description:
                 "Get a short-lived signed download URL for a transaction file attachment. The response includes the URL and an `expires_at` timestamp.",
-            inputSchema: {
+            inputSchema: z.object({
                 file_id: z.coerce
                     .number()
                     .describe("ID of the file attachment."),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -838,11 +838,11 @@ export function registerTransactionTools(server: McpServer) {
         "delete_transaction_attachment",
         {
             description: "Delete a transaction file attachment. Irreversible.",
-            inputSchema: {
+            inputSchema: z.object({
                 file_id: z.coerce
                     .number()
                     .describe("ID of the file attachment to delete."),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
