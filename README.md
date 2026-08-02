@@ -204,29 +204,34 @@ The bundled stdio binary covers desktop MCP clients, but Claude on mobile and th
 
 ### Self-hosted: HTTP transport on your own host
 
-For a single-user deployment, wire `createServer()` into [`StreamableHTTPServerTransport`](https://github.com/modelcontextprotocol/typescript-sdk#streamable-http-transport) and serve it from any Node HTTP framework. Example with Express:
+For a single-user deployment, wire `createServer()` into a Streamable HTTP transport using [`@modelcontextprotocol/server`'s own framework adapters](https://www.npmjs.com/package/@modelcontextprotocol/server#readme) and serve it from any Node HTTP framework. Example with `@modelcontextprotocol/express`:
 
 ```ts
-import express from "express";
+import { createMcpExpressApp } from "@modelcontextprotocol/express";
+import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
 import { createServer } from "@akutishevsky/lunchmoney-mcp/server";
 import { initializeConfig } from "@akutishevsky/lunchmoney-mcp/config";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
 initializeConfig(process.env.LUNCHMONEY_API_TOKEN!);
 const server = createServer("1.0.0");
+const app = createMcpExpressApp();
 
-const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
+app.post("/mcp", async (req, res) => {
+    // Stateless example: create a transport per request. For stateful mode
+    // (sessions), keep a transport instance around and reuse it — see the
+    // @modelcontextprotocol/node README.
+    const transport = new NodeStreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+    });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
 });
-await server.connect(transport);
-
-const app = express();
-app.use(express.json());
-app.all("/mcp", (req, res) => transport.handleRequest(req, res, req.body));
 app.listen(3000);
 ```
 
-Swap Express for Hono (via `@hono/node-server`) or Fastify if you prefer — the transport only needs Node's `IncomingMessage` and `ServerResponse`. Add your own auth in front of `/mcp` — the package ships no transport-level auth.
+Swap `@modelcontextprotocol/express` for `@modelcontextprotocol/fastify` if you prefer Fastify — both use the same `NodeStreamableHTTPServerTransport`. For Hono, use `@modelcontextprotocol/hono` with `WebStandardStreamableHTTPServerTransport` from `@modelcontextprotocol/server` instead, since Hono targets web-standard runtimes rather than Node's `IncomingMessage`/`ServerResponse`. Add your own auth in front of `/mcp` — the package ships no transport-level auth, though the adapter packages do offer `requireBearerAuth` and OAuth metadata helpers if you want to wire one up.
+
+> **This pattern is not confirmed to support protocol revision `2026-07-28`.** The example above is copied from the adapter packages' own current documentation, but `server.connect(transport)` does not go through the same machinery that registers modern-era support elsewhere in this SDK. Checked directly against `@modelcontextprotocol/server@2.0.0`'s source: `installModernOnlyHandlers` — the function that installs `server/discover` and extends the server's supported protocol versions — is called from exactly two places, `serveStdio`'s connection setup and `createMcpHandler`'s own per-request dispatch logic. It is not called by a generic `Server`/`McpServer.connect()`, which is what this pattern (and, per its published README, `NodeStreamableHTTPServerTransport` itself) relies on. This is the same class of gap Task 5 of the SDK v2 port found and fixed for stdio (`new StdioServerTransport()` + `server.connect()` doesn't register `server/discover` either — only `serveStdio()` does). Until this is verified against a live client, treat this example as serving the legacy (2025-era) protocol only; the [Cloudflare Workers option](#turnkey-cloudflare-workers) above uses `createMcpHandler` directly and is confirmed working for both eras.
 
 > **Set `LUNCHMONEY_ATTACHMENTS_DIR` on any remote deployment.** `attach_file_to_transaction` reads a path supplied by the caller off the host's filesystem. On a desktop stdio server the caller and the file owner are the same person, so that is unremarkable. Once the server is reachable over HTTP they are different principals, and an unconfined read is a way for a remote caller — or a prompt-injected model — to pull files off your host. Point the variable at a dedicated directory and keep nothing else in it. The content-type check (only real JPEG/PNG/HEIC/HEIF/PDF files upload) applies either way, but it is a backstop, not a substitute.
 

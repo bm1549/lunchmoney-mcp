@@ -25,7 +25,7 @@ A husky pre-commit hook runs `npm run format` automatically before every commit.
 
 ## Architecture
 
-**Entry point:** `src/index.ts` — creates `McpServer`, registers all tool modules, initializes config, connects via `StdioServerTransport`.
+**Entry point:** `src/index.ts` — creates `McpServer`, registers all tool modules, initializes config, serves stdio via `serveStdio()` from `@modelcontextprotocol/server/stdio`.
 
 **Config:** `src/config.ts` — process-wide singleton via `initializeConfig()` for single-tenant callers, or async-scoped via `runWithConfig()` for multi-tenant hosts. Requires `LUNCHMONEY_API_TOKEN` env var. Base URL (`https://api.lunchmoney.dev/v2`) is hardcoded. Access via `getConfig()`.
 
@@ -50,10 +50,9 @@ server.registerTool(
     "snake_case_name",
     {
         description: "Description for AI",
-        inputSchema: {
-            /* Zod fields with .describe() — no z.object() wrapper */
+        inputSchema: z.object({
             field: z.string().describe("Field description"),
-        },
+        }),
         annotations: {
             readOnlyHint: true, // see annotation guide below
         },
