@@ -37,7 +37,7 @@ export function registerCryptoTools(server: McpServer) {
         {
             description:
                 "Update a manually-managed crypto asset via the v1 crypto endpoint. The id must be from a get_all_crypto result with source=manual.",
-            inputSchema: {
+            inputSchema: z.object({
                 crypto_id: z.coerce
                     .number()
                     .describe(
@@ -65,7 +65,7 @@ export function registerCryptoTools(server: McpServer) {
                     .string()
                     .optional()
                     .describe("Optional supported cryptocurrency code."),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },

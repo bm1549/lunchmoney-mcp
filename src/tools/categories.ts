@@ -15,7 +15,7 @@ export function registerCategoryTools(server: McpServer) {
         {
             description:
                 "Get a list of all categories associated with the user's account. Returns categories in alphabetical order.",
-            inputSchema: {
+            inputSchema: z.object({
                 format: z
                     .enum(["flattened", "nested"])
                     .optional()
@@ -28,7 +28,7 @@ export function registerCategoryTools(server: McpServer) {
                     .describe(
                         "If true, returns only category groups. If false, returns only categories that are not category groups.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -64,13 +64,13 @@ export function registerCategoryTools(server: McpServer) {
         {
             description:
                 "Get details on a single category or category group, including the list of children categories for category groups.",
-            inputSchema: {
+            inputSchema: z.object({
                 categoryId: z.coerce
                     .number()
                     .describe(
                         "Id of the category to query. Call get_all_categories first to discover ids.",
                     ),
-            },
+            }),
             annotations: {
                 readOnlyHint: true,
             },
@@ -100,7 +100,7 @@ export function registerCategoryTools(server: McpServer) {
         {
             description:
                 "Create a new category or a category group. Set is_group=true to create a category group; supply children as an array of existing category IDs and/or strings (names of new sub-categories to create).",
-            inputSchema: {
+            inputSchema: z.object({
                 name: z
                     .string()
                     .min(1)
@@ -151,7 +151,7 @@ export function registerCategoryTools(server: McpServer) {
                     .describe(
                         "Only valid when is_group is true. Array of existing category IDs (numbers) and/or names of new sub-categories to create (strings).",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: false,
             },
@@ -203,7 +203,7 @@ export function registerCategoryTools(server: McpServer) {
         {
             description:
                 "Update properties for an existing category or category group. For category groups, supplying children replaces the group's full child list. Cannot be used to convert between category and category group.",
-            inputSchema: {
+            inputSchema: z.object({
                 categoryId: z.coerce
                     .number()
                     .describe(
@@ -237,7 +237,7 @@ export function registerCategoryTools(server: McpServer) {
                     .describe(
                         "Only valid for category groups. Replaces the group's full children list. Existing IDs (numbers) keep/move categories; strings create new sub-categories.",
                     ),
-            },
+            }),
             annotations: {
                 idempotentHint: true,
             },
@@ -292,7 +292,7 @@ export function registerCategoryTools(server: McpServer) {
         {
             description:
                 "Delete a single category or category group. By default fails (HTTP 422) if dependencies exist, returning a structured `dependents` payload. Set force=true to delete and disassociate from all related budgets, transactions, recurring items, etc. Force delete is irreversible.",
-            inputSchema: {
+            inputSchema: z.object({
                 category_id: z.coerce
                     .number()
                     .describe(
@@ -304,7 +304,7 @@ export function registerCategoryTools(server: McpServer) {
                     .describe(
                         "If true, force deletion even if dependencies exist (irreversible).",
                     ),
-            },
+            }),
             annotations: {
                 destructiveHint: true,
             },
