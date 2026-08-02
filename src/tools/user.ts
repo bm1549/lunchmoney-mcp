@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { api, dataResponse, handleApiError, catchError } from "../api.js";
 import { User } from "../types.js";
 
