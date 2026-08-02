@@ -11,7 +11,7 @@ export function registerPrompts(server: McpServer) {
         {
             description:
                 "Analyze spending by category for a given month, combining transaction data with budget targets",
-            argsSchema: {
+            argsSchema: z.object({
                 month: z
                     .string()
                     .optional()
@@ -24,7 +24,7 @@ export function registerPrompts(server: McpServer) {
                     .describe(
                         "Currency code to filter by (e.g. 'usd'). Defaults to all currencies.",
                     ),
-            },
+            }),
         },
         async ({ month, currency }) => {
             const now = new Date();
@@ -69,14 +69,14 @@ export function registerPrompts(server: McpServer) {
         {
             description:
                 "Review recurring items for a given month to audit subscriptions and recurring costs",
-            argsSchema: {
+            argsSchema: z.object({
                 month: z
                     .string()
                     .optional()
                     .describe(
                         "Month to audit in YYYY-MM format. Defaults to current month.",
                     ),
-            },
+            }),
         },
         async ({ month }) => {
             const now = new Date();
@@ -147,7 +147,7 @@ export function registerPrompts(server: McpServer) {
         {
             description:
                 "Find uncategorized transactions in a date range and suggest categories for them",
-            argsSchema: {
+            argsSchema: z.object({
                 start_date: z
                     .string()
                     .optional()
@@ -160,7 +160,7 @@ export function registerPrompts(server: McpServer) {
                     .describe(
                         "End date in YYYY-MM-DD format. Defaults to last day of current month.",
                     ),
-            },
+            }),
         },
         async ({ start_date, end_date }) => {
             const now = new Date();
