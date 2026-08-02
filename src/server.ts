@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { registerUserTools } from "./tools/user.js";
 import { registerCategoryTools } from "./tools/categories.js";
 import { registerTagTools } from "./tools/tags.js";
