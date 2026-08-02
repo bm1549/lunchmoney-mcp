@@ -1,51 +1,82 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 interface Config {
     lunchmoneyApiToken: string;
     baseUrl: string;
 }
 
-let config: Config | null = null;
+const BASE_URL = "https://api.lunchmoney.dev/v2";
 
 /**
- * Set the LunchMoney API token used by every tool in this package.
+ * Request-scoped config. Preferred over the process-wide fallback so that a
+ * single process can serve multiple tenants concurrently without racing.
+ */
+const configStorage = new AsyncLocalStorage<Config>();
+
+/** Process-wide fallback for single-tenant callers (stdio, CLI). */
+let fallbackConfig: Config | null = null;
+
+function buildConfig(lunchmoneyApiToken: string): Config {
+    if (!lunchmoneyApiToken) {
+        throw new Error(
+            "LunchMoney API token is required. Pass it to initializeConfig() or runWithConfig().",
+        );
+    }
+    return { lunchmoneyApiToken, baseUrl: BASE_URL };
+}
+
+/**
+ * Run `fn` with `lunchmoneyApiToken` bound to the current async context.
  *
- * Must be called before `createServer()` is connected to a transport, or
- * before any individual tool is invoked.
- *
- * ⚠️ Single-tenant assumption: the config is stored in a module-level
- * singleton, so two concurrent requests in the same process can race and
- * read each other's tokens. This is safe on per-isolate runtimes
- * (Cloudflare Workers + Durable Objects, AWS Lambda) and on single-user
- * stdio deployments. It is NOT safe on shared-process multi-tenant hosts
- * (e.g. a single Node process serving multiple users via Express or Hono);
- * those consumers need to either fork per-user or refactor the singleton
- * before exposing this package.
+ * Multi-tenant hosts (a stateless Worker serving many users from one isolate)
+ * MUST use this rather than `initializeConfig`: the token is visible only to
+ * `fn` and everything it awaits, so concurrent requests cannot read each
+ * other's credentials.
  *
  * @param lunchmoneyApiToken - Personal API token from
  *   https://my.lunchmoney.app/developers.
+ * @param fn - Work to run under that token.
+ * @throws If `lunchmoneyApiToken` is empty.
+ */
+const runWithConfig = <T>(lunchmoneyApiToken: string, fn: () => T): T =>
+    configStorage.run(buildConfig(lunchmoneyApiToken), fn);
+
+/**
+ * Set the process-wide LunchMoney API token.
+ *
+ * Intended for single-tenant deployments (stdio, one-user CLI). Multi-tenant
+ * hosts must use {@link runWithConfig} instead — a process-wide token is
+ * shared by every concurrent request in the process.
+ *
+ * @param lunchmoneyApiToken - Personal API token.
  * @throws If `lunchmoneyApiToken` is empty.
  */
 const initializeConfig = (lunchmoneyApiToken: string): Config => {
-    if (!lunchmoneyApiToken) {
-        throw new Error(
-            "LunchMoney API token is required. Pass it to initializeConfig().",
-        );
-    }
-
-    config = {
-        lunchmoneyApiToken,
-        baseUrl: "https://api.lunchmoney.dev/v2",
-    };
-
-    return config;
+    fallbackConfig = buildConfig(lunchmoneyApiToken);
+    return fallbackConfig;
 };
 
+/**
+ * The active config: the async-scoped one when inside {@link runWithConfig},
+ * otherwise the process-wide one from {@link initializeConfig}.
+ *
+ * If the async context is ever lost — a continuation whose async resource
+ * was created before {@link runWithConfig} ran, e.g. a module-level promise,
+ * an event listener registered at connect time, or a callback scheduled
+ * outside the bound scope — this silently returns the process-wide fallback
+ * rather than throwing. Multi-tenant hosts must therefore never call
+ * {@link initializeConfig}: its mere presence turns a lost context into a
+ * cross-tenant token leak instead of a loud failure.
+ *
+ * @throws If neither has been established.
+ */
 const getConfig = (): Config => {
-    if (!config) {
-        throw new Error(
-            "Configuration not initialized. Call initializeConfig() first.",
-        );
-    }
-    return config;
+    const scoped = configStorage.getStore();
+    if (scoped) return scoped;
+    if (fallbackConfig) return fallbackConfig;
+    throw new Error(
+        "Configuration not initialized. Call initializeConfig() or runWithConfig() first.",
+    );
 };
 
-export { type Config, initializeConfig, getConfig };
+export { type Config, initializeConfig, runWithConfig, getConfig };
