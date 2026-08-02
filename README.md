@@ -200,7 +200,7 @@ The bundled stdio binary covers desktop MCP clients, but Claude on mobile and th
 
 ### Turnkey: Cloudflare Workers
 
-[lunchmoney-mcp-cloudflare](https://github.com/bm1549/lunchmoney-mcp-cloudflare) wraps this package as a Cloudflare Worker with Google sign-in and an email allowlist in front of the MCP endpoint. The whole stack fits inside Cloudflare's and Google Cloud's free tiers, and a `setup.sh` wizard handles KV creation, OAuth client setup, secrets, and deploy in one walkthrough. Each authenticated user runs in their own Durable Object, so the [config singleton](#embedding-as-a-library) stays per-user.
+[lunchmoney-mcp-cloudflare](https://github.com/bm1549/lunchmoney-mcp-cloudflare) wraps this package as a Cloudflare Worker with Google sign-in and an email allowlist in front of the MCP endpoint. The whole stack fits inside Cloudflare's and Google Cloud's free tiers, and a `setup.sh` wizard handles KV creation, OAuth client setup, secrets, and deploy in one walkthrough. Each authenticated user runs in their own Durable Object, so the [config](#embedding-as-a-library) stays per-user.
 
 ### Self-hosted: HTTP transport on your own host
 
@@ -230,7 +230,7 @@ Swap Express for Hono (via `@hono/node-server`) or Fastify if you prefer — the
 
 > **Set `LUNCHMONEY_ATTACHMENTS_DIR` on any remote deployment.** `attach_file_to_transaction` reads a path supplied by the caller off the host's filesystem. On a desktop stdio server the caller and the file owner are the same person, so that is unremarkable. Once the server is reachable over HTTP they are different principals, and an unconfined read is a way for a remote caller — or a prompt-injected model — to pull files off your host. Point the variable at a dedicated directory and keep nothing else in it. The content-type check (only real JPEG/PNG/HEIC/HEIF/PDF files upload) applies either way, but it is a backstop, not a substitute.
 
-> **Multi-tenant warning.** This pattern serves one user from one process with one shared API token. To serve multiple users from a single Node process you'd hit the [single-tenant config singleton](#embedding-as-a-library); fork the process per user or use the Cloudflare option above (each user gets their own isolate).
+> **Multi-tenant warning.** This pattern serves one user from one process with one shared API token, since the example above calls `initializeConfig`. To serve multiple users from a single Node process, switch to [`runWithConfig`](#embedding-as-a-library) and scope each request's token to its own async context, fork the process per user, or use the Cloudflare option above (each user gets their own isolate).
 
 ## Example Prompts
 
@@ -436,16 +436,26 @@ The package exposes subpath entry points so it can be embedded in a custom trans
 
 ```ts
 import { createServer } from "@akutishevsky/lunchmoney-mcp/server";
-import { initializeConfig } from "@akutishevsky/lunchmoney-mcp/config";
+import {
+    initializeConfig,
+    runWithConfig,
+} from "@akutishevsky/lunchmoney-mcp/config";
 
+// Single-tenant (stdio, one-user CLI): set the token once at startup.
 initializeConfig(process.env.LUNCHMONEY_API_TOKEN!);
 const server = createServer("1.0.0");
 // connect `server` to whatever transport you need
+
+// Multi-tenant (a stateless Worker or process serving many users from one
+// runtime): scope the token to each request's async context instead.
+await runWithConfig(perUserToken, async () => {
+    // handle this user's request; tool calls inside here see `perUserToken`
+});
 ```
 
-`initializeConfig` must be called before any tool is invoked, or the first request throws `"Configuration not initialized."`.
+Before any tool is invoked, config must be established — `initializeConfig` for the single-tenant case, or a `runWithConfig` call wrapping the request for the multi-tenant case — or the first tool call throws `"Configuration not initialized. Call initializeConfig() or runWithConfig() first."`.
 
-> **Single-tenant assumption.** The config is held in a module-level singleton. That is safe on per-isolate runtimes — each user gets their own isolate, so there is no shared mutable state to race on. It is **not** safe on shared-process multi-tenant Node hosts (e.g. one Express or Hono process serving multiple users): concurrent `initializeConfig` calls would race and leak tokens between requests. Those consumers need to fork per-user or refactor the singleton before exposing the package.
+> **Choosing between them.** `initializeConfig` sets a process-wide token. That's fine on a per-isolate runtime — each user already gets their own isolate — or in a genuinely single-tenant deployment (stdio, one-user CLI). It is **not** safe on shared-process multi-tenant Node hosts (e.g. one Express or Hono process serving multiple users): concurrent `initializeConfig` calls would race and leak tokens between requests. `runWithConfig` scopes the token to the async context of the callback you pass it, so concurrent requests in the same process can't see each other's tokens — multi-tenant hosts must use it instead of `initializeConfig`.
 
 ## API Reference
 

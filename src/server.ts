@@ -14,11 +14,12 @@ import { registerPrompts } from "./prompts.js";
 /**
  * Build a configured `McpServer` with all LunchMoney tools and prompts registered.
  *
- * `initializeConfig(token)` from `./config` must be called before any tool is
- * invoked. The returned server is wired up but inert — actual API calls go
- * through the module-level config singleton, which throws
- * `"Configuration not initialized. Call initializeConfig() first."` on the
- * first tool invocation if no token has been set.
+ * Before any tool is invoked, config from `./config` must be established:
+ * `initializeConfig(token)` for single-tenant callers (stdio, one-user CLI),
+ * or `runWithConfig(token, fn)` for multi-tenant hosts. The returned server is
+ * wired up but inert — actual API calls go through that config, which throws
+ * `"Configuration not initialized. Call initializeConfig() or runWithConfig()
+ * first."` on the first tool invocation if neither has been established.
  *
  * @param version - Version string surfaced to MCP clients as `serverInfo.version`.
  */
